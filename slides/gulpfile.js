@@ -15,7 +15,7 @@ const header = require('gulp-header')
 const eslint = require('gulp-eslint')
 const minify = require('gulp-clean-css')
 const connect = require('gulp-connect')
-const autoprefixer = require('gulp-autoprefixer')
+const autoprefixer = import('gulp-autoprefixer')
 
 const root = yargs.argv.root || '.'
 const port = yargs.argv.port || 8000
