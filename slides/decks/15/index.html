@@ -7,7 +7,7 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
 
-    <title>Lesson 12</title>
+    <title>Lesson 12 (Calling remote apis)</title>
 
     <link rel="stylesheet" href="../../dist/reset.css" />
     <link rel="stylesheet" href="../../dist/reveal.css" />
@@ -24,8 +24,8 @@
   <body>
     <div class="reveal">
       <div class="slides">
-        <section id="introduction">
-          <section>
+        <section>
+          <section id="introduction">
             <h1>Calling Remote Apis</h1>
             <h3>with IHttpClientFactory</h3>
             <div
@@ -47,7 +47,11 @@
               Backends are often split up in
               <mark>microservices</mark>
             </h2>
-            <img src="../../assets/microservices.png" alt="microservices" />
+            <img
+              class="r-stretch"
+              src="../../assets/microservices.png"
+              alt="microservices"
+            />
           </section>
           <section>
             <h2>Server to server communication</h2>
@@ -100,9 +104,10 @@
                 </ul>
               </li>
             </ul>
-
             <div class="fragment" data-fragment-index="1">
-              <pre><code class="cs" data-line-numbers="|4|" data-trim data-noescape><script type="text/template">
+              <pre>
+                <code class="cs" data-line-numbers="|4|" data-trim data-noescape>
+                  <script type="text/template">
                 [HttpGet("values")]
                 public async Task<string> GetRates()
                 {
@@ -115,23 +120,24 @@
                   }
                 }
             
-          </script></code></pre>
+                </script>
+                </code>
+            </pre>
             </div>
-            <div class="fragment">
-              Therefore you <mark style="color: red"> SHOULDN’T </mark> use it
-              like this!
-            </div>
-            <aside class="notes" aria-label="notes"></aside>
+            <ul class="fragment">
+              <li>
+                Therefore you <mark style="color: red"> SHOULDN’T </mark> use it
+                like this!
+              </li>
+            </ul>
           </section>
           <section>
             <h2>Socket Exhaustion</h2>
-            <img src="../../assets/socket_exhaustion.png" />
-            <ul class="fragment">
-              <li>
-                Many requests at in a short intercal can lead to
-                <mark> socket exhaustion</mark>
-              </li>
-            </ul>
+            <img class="r-stretch" src="../../assets/socket_exhaustion.png" />
+            <p class="fragment">
+              Many requests at in a short intercal can lead to
+              <mark> socket exhaustion</mark>
+            </p>
           </section>
         </section>
         <section>
@@ -170,7 +176,7 @@
           </section>
           <section>
             <h2>DNS Rotation</h2>
-            <img src="../../assets/dns_rotation.jpg" />
+            <img class="r-stretch" src="../../assets/dns_rotation.jpg" />
           </section>
         </section>
         <section>
@@ -186,7 +192,7 @@
           </section>
           <section>
             <h2>Using IHttpClientFactory</h2>
-            <img height="550px" src="../../assets/httpclientfactory.png" />
+            <img class="r-stretch" src="../../assets/httpclientfactory.png" />
           </section>
           <section>
             <h2>IHttpClientFactory interface</h2>
@@ -215,14 +221,11 @@
           </section>
           <section>
             <h2>HttpMessageHandlers</h2>
-            <ul>
-              <li>
-                Each HttpClient contains a pipeline of
-                <mark>HttpMessageHandlers</mark>
-              </li>
-            </ul>
-
-            <img height="550px" src="../../assets/httpMessageHandlers.png" />
+            <p>
+              Each HttpClient contains a pipeline of
+              <mark>HttpMessageHandlers</mark>
+            </p>
+            <img class="r-stretch" src="../../assets/httpMessageHandlers.png" />
           </section>
         </section>
         <section>
@@ -474,14 +477,20 @@
         <section>
           <h2>References & Links</h2>
           <ul>
-            <li style="margin-bottom: 1rem;">
+            <li style="margin-bottom: 1rem">
               <b>IHttpClientFactory Consumption patterns</b>
               <a
                 href="https://docs.microsoft.com/da-dk/aspnet/core/fundamentals/http-requests?view=aspnetcore-8.0#consumption-patterns"
                 >https://docs.microsoft.com/da-dk/aspnet/core/fundamentals/http-requests?view=aspnetcore-8.0#consumption-patterns</a
               >
             </li>
-            <li>Microservices architecture e-book (PDF) <a href="https://dotnet.microsoft.com/download/e-book/microservices-architecture/pdf">https://dotnet.microsoft.com/download/e-book/microservices-architecture/pdf</a> </li>
+            <li>
+              Microservices architecture e-book (PDF)
+              <a
+                href="https://dotnet.microsoft.com/download/e-book/microservices-architecture/pdf"
+                >https://dotnet.microsoft.com/download/e-book/microservices-architecture/pdf</a
+              >
+            </li>
           </ul>
         </section>
       </div>
