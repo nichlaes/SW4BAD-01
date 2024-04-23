@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+
+    <title>Lesson 12</title>
+
+    <link rel="stylesheet" href="../../dist/reset.css" />
+    <link rel="stylesheet" href="../../dist/reveal.css" />
+    <link rel="stylesheet" href="../../dist/theme/white.css" />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="../../css/asciinema-player.css"
+    />
+
+    <!-- Theme used for syntax highlighted code -->
+    <link rel="stylesheet" href="../../plugin/highlight/github.css" />
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides">
+        <section id="introduction">
+          <section>
+            <h1>Calling Remote Apis</h1>
+            <h3>with IHttpClientFactory</h3>
+            <div
+              class="flex center blockquote fragment"
+              style="align-items: baseline; margin-bottom: 2rem"
+            >
+              "no app is an
+              <img
+                style="max-width: 5rem; margin-left: 0.5rem"
+                src="../../assets/island.svg"
+                alt="island"
+              />"
+            </div>
+            <h3>Week 12</h3>
+            <h4>SW4BAD-01</h4>
+          </section>
+          <section>
+            <h2>
+              Backends are often split up in
+              <mark>microservices</mark>
+            </h2>
+            <img src="../../assets/microservices.png" alt="microservices" />
+          </section>
+          <section>
+            <h2>Server to server communication</h2>
+            <ul>
+              <li>
+                Http to a REST API
+                <ul>
+                  <li>Easy to implement</li>
+                </ul>
+              </li>
+              <li class="fragment">
+                gRPC
+                <ul>
+                  <li>
+                    builds on top of HTTP/2, typically much higher
+                    <mark> performance</mark>
+                    than traditional RESTful APIs.
+                  </li>
+                  <li>
+                    Reduced network usage with Protobuf binary serialization
+                  </li>
+                </ul>
+              </li>
+              <li class="fragment">
+                Message queues
+                <ul>
+                  <li>Is also known as <mark> asynchronous messaging</mark></li>
+                  <li>
+                    Makes your data temporarily persistent,
+                    <mark> reducing the chance of errors </mark>, when parts of
+                    the system are offline
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+        </section>
+        <section>
+          <section>
+            <h2>HttpClient - Using</h2>
+            <ul>
+              <li>
+                In .NET we use the HttpClient class for calling HTTP APIs.
+              </li>
+              <li class="fragment" data-fragment-index="1">
+                But be <mark> careful</mark>, HttpClient is designed to be
+                reused.
+                <ul>
+                  <li><code>using</code> disposes the httpClient</li>
+                </ul>
+              </li>
+            </ul>
+
+            <div class="fragment" data-fragment-index="1">
+              <pre><code class="cs" data-line-numbers="|4|" data-trim data-noescape><script type="text/template">
+                [HttpGet("values")]
+                public async Task<string> GetRates()
+                {
+                  using (HttpClient client = new HttpClient())
+                  {
+                    client.BaseAddress = new Uri("https://api.exchangeratesapi.io");
+                    var response = await client.GetAsync("latest");
+                    response.EnsureSuccessStatusCode();
+                    return await response.Content.ReadAsStringAsync();
+                  }
+                }
+            
+          </script></code></pre>
+            </div>
+            <div class="fragment">
+              Therefore you <mark style="color: red"> SHOULDN’T </mark> use it
+              like this!
+            </div>
+            <aside class="notes" aria-label="notes"></aside>
+          </section>
+          <section>
+            <h2>Socket Exhaustion</h2>
+            <img src="../../assets/socket_exhaustion.png" />
+            <ul class="fragment">
+              <li>
+                Many requests at in a short intercal can lead to
+                <mark> socket exhaustion</mark>
+              </li>
+            </ul>
+          </section>
+        </section>
+        <section>
+          <section>
+            <h2>HttpClient - Singleton</h2>
+            <pre><code class="cs" data-line-numbers="|3-6|11|" data-trim data-noescape><script type="text/template">
+              public class ValuesController : ControllerBase
+              {
+                private static readonly HttpClient _client = new HttpClient
+                {
+                  BaseAddress = new Uri("https://api.exchangeratesapi.io")
+                };
+
+                [HttpGet("values")]
+                public async Task<string> GetRates()
+                {
+                  var response = await _client.GetAsync("latest");
+                  response.EnsureSuccessStatusCode();
+                  return await response.Content.ReadAsStringAsync();
+                }
+              }
+          
+            </script></code></pre>
+            <ul>
+              <li class="fragment">Solves problem of socket exhaustion</li>
+              <li class="fragment">
+                Introduces a new problem, <mark> DNS Rotation</mark>
+                <ul>
+                  <li>
+                    if the DNS entry changes, after the
+                    <code> HttpClient</code> was created
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+          <section>
+            <h2>DNS Rotation</h2>
+            <img src="../../assets/dns_rotation.jpg" />
+          </section>
+        </section>
+        <section>
+          <section>
+            <h2>Use IHttpClientFactory</h2>
+            <h3>to implement resilient HTTP requests</h3>
+            <ul class="fragment">
+              <li>Http clients are designed to be <mark>short-lived</mark></li>
+              <li>
+                Takes advantage of <code>HttpClient</code> handler rotation
+              </li>
+            </ul>
+          </section>
+          <section>
+            <h2>Using IHttpClientFactory</h2>
+            <img height="550px" src="../../assets/httpclientfactory.png" />
+          </section>
+          <section>
+            <h2>IHttpClientFactory interface</h2>
+            <ul>
+              <li>
+                addresses the <mark>issues</mark> with the original HttpClient
+                class
+              </li>
+              <li>
+                Configurable and works with
+                <code> Dependency Injection (DI)</code>
+              </li>
+              <li class="fragment" style="margin-top: 1rem">
+                Provides extensions for Polly-based middleware.
+                <ul>
+                  <li>
+                    Polly is a
+                    <mark>transient-fault-handling library </mark> that helps
+                    developers add resiliency to their applications, by using
+                    some pre-defined policies in a fluent and thread-safe
+                    manner.
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </section>
+          <section>
+            <h2>HttpMessageHandlers</h2>
+            <ul>
+              <li>
+                Each HttpClient contains a pipeline of
+                <mark>HttpMessageHandlers</mark>
+              </li>
+            </ul>
+
+            <img height="550px" src="../../assets/httpMessageHandlers.png" />
+          </section>
+        </section>
+        <section>
+          <section><h2>How to use IHttpClientFactory</h2></section>
+          <section>
+            <h2>Several ways to use IHttpClientFactory</h2>
+            <ul>
+              <li class="fragment">Basic usage (CreateClient)</li>
+              <li class="fragment">Use Named Clients</li>
+              <li class="fragment"><b>Use Typed Clients</b></li>
+              <li class="fragment">
+                Use Generated Clients
+                <a
+                  href="https://learn.microsoft.com/en-us/dotnet/core/extensions/httpclient-factory#generated-clients"
+                  >https://learn.microsoft.com/en-us/dotnet/core/extensions/httpclient-factory#generated-clients</a
+                >
+              </li>
+            </ul>
+          </section>
+          <section>
+            <h2>Register IHttpClientFactory</h2>
+
+            <ol>
+              <li>Register IHttpClientFactory in <code>Program.cs</code></li>
+              <pre>
+                <code class="cs" data-trim data-noescape>
+                  <script type="text/template">
+                    builder.Services.AddHttpClient();
+                  </script>
+                </code>
+              </pre>
+              <li class="fragment" data-fragment-index="1">
+                Inject <code>IHttpClientFactory</code> in the controller
+              </li>
+            </ol>
+            <div class="fragment" data-fragment-index="1">
+              <pre>
+                <code class="cs" data-line-numbers="|5|" data-trim data-noescape>
+                  <script type="text/template">
+                    public class ValuesController : ControllerBase
+                    {
+                      private readonly IHttpClientFactory _clientFactory;
+                      
+                      public ValuesController(IHttpClientFactory clientFactory)
+                      {
+                        _clientFactory = clientFactory;
+                      }
+                    }
+                </script>
+              </code>
+            </pre>
+            </div>
+          </section>
+          <section>
+            <h2>Basic usage / CreateClient</h2>
+            <pre>
+              <code class="cs" data-line-numbers="|4-13|15|16|" data-trim data-noescape>
+                <script type="text/template">
+                  [HttpGet]
+                  public async Task<IEnumerable<GitHubBranch>> GetGitHubBranches()
+                  {
+                      var httpRequestMessage = new HttpRequestMessage(
+                          HttpMethod.Get,
+                          "https://api.github.com/repos/dotnet/AspNetCore.Docs/branches")
+                          {
+                              Headers =
+                              {
+                                  { HeaderNames.Accept, "application/vnd.github.v3+json" },
+                                  { HeaderNames.UserAgent, "HttpRequestsSample" }
+                              }
+                          };
+          
+                      var httpClient = _httpClientFactory.CreateClient();
+                      var httpResponseMessage = await httpClient.SendAsync(httpRequestMessage);
+          
+                      if (httpResponseMessage.IsSuccessStatusCode)
+                      {
+                          using var contentStream =
+                              await httpResponseMessage.Content.ReadAsStreamAsync();
+          
+                          return await JsonSerializer.DeserializeAsync
+                              <IEnumerable<GitHubBranch>>(contentStream);
+                      }
+                  }
+                </script>
+              </code>
+          </section>
+          <section>
+            <h2>Named Client</h2>
+            <pre>
+              <code class="cs" data-line-numbers="|4-13|15|16|" data-trim data-noescape>
+                <script type="text/template">
+                  [HttpGet]
+                  public async Task<IEnumerable<GitHubBranch>> GetGitHubBranches()
+                  {
+                      var httpRequestMessage = new HttpRequestMessage(
+                          HttpMethod.Get,
+                          "https://api.github.com/repos/dotnet/AspNetCore.Docs/branches")
+                          {
+                              Headers =
+                              {
+                                  { HeaderNames.Accept, "application/vnd.github.v3+json" },
+                                  { HeaderNames.UserAgent, "HttpRequestsSample" }
+                              }
+                          };
+          
+                      var httpClient = _httpClientFactory.CreateClient();
+                      var httpResponseMessage = await httpClient.SendAsync(httpRequestMessage);
+          
+                      if (httpResponseMessage.IsSuccessStatusCode)
+                      {
+                          using var contentStream =
+                              await httpResponseMessage.Content.ReadAsStreamAsync();
+          
+                          return await JsonSerializer.DeserializeAsync
+                              <IEnumerable<GitHubBranch>>(contentStream);
+                      }
+                  }
+                </script>
+              </code>
+          </section>
+          <section>
+            <h2><code>IJob</code> implementation</h2>
+            <pre><code class="cs" data-line-numbers="|5-6,23|16-22|" data-trim data-noescape><script type="text/template">
+							using Quartz.Data;
+
+							namespace Quartz.API;
+
+							public class WriteRandomNumberJob : IJob
+							{
+								private readonly ILogger<WriteRandomNumberJob> _logger;
+								private readonly RandomNumberDbContext _dbContext;
+
+								public WriteRandomNumberJob(ILogger<WriteRandomNumberJob> logger, RandomNumberDbContext dbContext) 
+								{
+									_dbContext = dbContext;
+									_logger = logger;
+								}
+
+								public async Task Execute(IJobExecutionContext context)
+								{
+									await _dbContext.AddAsync(new RandomNumber {
+										Number = new Random().Next()
+									});
+									await _dbContext.SaveChangesAsync();
+								}
+							}
+						</script></code></pre>
+            <small
+              >examples/lesson-14-background-services/Quartz/Quartz.API/WriteRandomNumberJob.cs</small
+            >
+          </section>
+          <section>
+            <h2>Clustering</h2>
+            <ul>
+              <li>
+                Must be considered when <mark>scaling</mark> the application
+                <mark>horizontally</mark>
+                <ul>
+                  <li>
+                    <mark>Challenge</mark> Each instance would create a
+                    background task
+                  </li>
+                </ul>
+              </li>
+              <li>
+                Possible solutions
+                <ul>
+                  <li>
+                    Move the task to a <mark>separate</mark> application (a
+                    <mark>headless</mark> worker service)
+                  </li>
+                  <li>
+                    Enable clustering to distribute tasks
+                    <mark>across</mark> instances
+                  </li>
+                </ul>
+              </li>
+            </ul>
+            <aside class="notes" aria-label="notes">
+              <h4>References</h4>
+              <ul>
+                <li>
+                  John Smith, ASP.NET Core in Action, 2nd edition (ISBN
+                  9781617298301), pp. 708-711
+                </li>
+              </ul>
+            </aside>
+          </section>
+          <section>
+            <h2>Quartz clustering</h2>
+            <pre><code class="cs" data-line-numbers="|4,9|5|6|7|8|" data-trim data-noescape><script type="text/template">
+							builder.Services.AddQuartz(
+								q => {
+									// ...
+									q.UsePersistentStore(s => {
+											s.UseSqlServer(connectionString);
+											s.UseClustering();
+											s.UseProperties = true;
+											s.UseJsonSerializer();
+								});
+							}
+						);
+						</script></code></pre>
+            <small
+              >examples/lesson-14-background-services/Quartz/Quartz.API/Program.cs</small
+            >
+          </section>
+          <section>
+            <h2>Clustering</h2>
+            <img
+              width="width: 60%;"
+              src="../../assets/quartz-clustering.png"
+              alt="quartz-clustering"
+            />
+            <aside class="notes" aria-label="notes">
+              <h4>References</h4>
+              <ul>
+                <li>
+                  John Smith, ASP.NET Core in Action, 2nd edition (ISBN
+                  9781617298301), p. 710
+                </li>
+              </ul>
+            </aside>
+          </section>
+          <section>
+            <h2>Persistent database</h2>
+            <ul>
+              <li>
+                Quartz.NET relies on a <mark>persistent</mark> database for
+                clustering
+                <ul>
+                  <li>
+                    Support a wide range of databases: MySQL, Oracle, SQL
+                    Server, etc.
+                  </li>
+                </ul>
+              </li>
+              <li>
+                Uses database as backing store
+                <ul>
+                  <li>Can also be used for only persistence</li>
+                  <li>
+                    If used for clustering, must support
+                    <mark>locking</mark> primitives
+                  </li>
+                </ul>
+              </li>
+              <li>
+                Does not create the tables automatically
+                <ul>
+                  <li>Add the required tables <mark>manually</mark></li>
+                  <li>
+                    Can be managed with Entity Framework Core
+                    <mark>migrations</mark>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+            <aside class="notes" aria-label="notes">
+              <h4>References</h4>
+            </aside>
+          </section>
+        </section>
+        <section>
+          <h2>Wrap-up</h2>
+          <ul>
+            <li>
+              Background services
+              <ul>
+                <li>Use cases</li>
+                <li>Deployment</li>
+              </ul>
+            </li>
+            <li>Implementing background tasks in .NET</li>
+            <li>Quartz.NET</li>
+          </ul>
+        </section>
+      </div>
+    </div>
+
+    <script src="../../dist/reveal.js"></script>
+    <script src="../../plugin/notes/notes.js"></script>
+    <script src="../../plugin/markdown/markdown.js"></script>
+    <script src="../../plugin/highlight/highlight.js"></script>
+    <script src="../../js/asciinema-player.js"></script>
+
+    <script>
+      // More info about initialization & config:
+      // - https://revealjs.com/initialization/
+      // - https://revealjs.com/config/
+      Reveal.initialize({
+        hash: true,
+        slideNumber: true,
+        pdfSeparateFragments: false,
+        // Learn about plugins: https://revealjs.com/plugins/
+        plugins: [RevealMarkdown, RevealHighlight, RevealNotes],
+      });
+    </script>
+    <style>
+      .flex {
+        display: flex;
+      }
+      .center {
+        justify-content: center;
+        align-items: center;
+      }
+      .blockquote {
+        font-style: italic;
+        background: #f9f9f9;
+        margin: 1.5em 10px;
+        padding: 0.5em 10px;
+        quotes: "\201C""\201D""\2018""\2019";
+      }
+    </style>
+  </body>
+</html>
