@@ -230,7 +230,7 @@
           <section>
             <h2>Several ways to use IHttpClientFactory</h2>
             <ul>
-              <li class="fragment">Basic usage (CreateClient)</li>
+              <li>Basic usage (CreateClient)</li>
               <li class="fragment">Use Named Clients</li>
               <li class="fragment"><b>Use Typed Clients</b></li>
               <li class="fragment">
@@ -309,196 +309,179 @@
                   }
                 </script>
               </code>
+            </pre>
           </section>
           <section>
             <h2>Named Client</h2>
+            <ul>
+              <li>
+                Use to <mark>isolate</mark> the configuration of the client
+              </li>
+            </ul>
             <pre>
-              <code class="cs" data-line-numbers="|4-13|15|16|" data-trim data-noescape>
+              <code class="cs" data-trim data-noescape>
                 <script type="text/template">
-                  [HttpGet]
-                  public async Task<IEnumerable<GitHubBranch>> GetGitHubBranches()
+                  // in program.cs
+                  builder.Services.AddHttpClient("GitHub", httpClient =>
                   {
-                      var httpRequestMessage = new HttpRequestMessage(
-                          HttpMethod.Get,
-                          "https://api.github.com/repos/dotnet/AspNetCore.Docs/branches")
-                          {
-                              Headers =
-                              {
-                                  { HeaderNames.Accept, "application/vnd.github.v3+json" },
-                                  { HeaderNames.UserAgent, "HttpRequestsSample" }
-                              }
-                          };
-          
-                      var httpClient = _httpClientFactory.CreateClient();
-                      var httpResponseMessage = await httpClient.SendAsync(httpRequestMessage);
-          
+                      httpClient.BaseAddress = new Uri("https://api.github.com/");
+
+                      // using Microsoft.Net.Http.Headers;
+                      // The GitHub API requires two headers.
+                      httpClient.DefaultRequestHeaders.Add(
+                          HeaderNames.Accept, "application/vnd.github.v3+json");
+                      httpClient.DefaultRequestHeaders.Add(
+                          HeaderNames.UserAgent, "HttpRequestsSample");
+                  });
+
+                </script>
+              </code>
+            </pre>
+          </section>
+          <section>
+            <h2>Named Client</h2>
+            <pre><code class="cs" data-line-numbers="|14|15-16|" data-trim data-noescape><script type="text/template">
+							public class NamedClientController : ControllerBase
+              {
+                  private readonly IHttpClientFactory _httpClientFactory;
+
+                  public NamedClientController(IHttpClientFactory httpClientFactory)
+                  {
+                      _httpClientFactory = httpClientFactory;
+                  }
+
+                  // GET: api/NamedClient
+                  [HttpGet]
+                  public async Task<IEnumerable<GitHubBranch>> Get()
+                  {
+                      var httpClient = _httpClientFactory.CreateClient("GitHub");
+                      var httpResponseMessage = await httpClient.GetAsync(
+                          "repos/dotnet/AspNetCore.Docs/branches");
+
                       if (httpResponseMessage.IsSuccessStatusCode)
                       {
                           using var contentStream =
                               await httpResponseMessage.Content.ReadAsStreamAsync();
-          
+
                           return await JsonSerializer.DeserializeAsync
                               <IEnumerable<GitHubBranch>>(contentStream);
+                      }
+                      else return Enumerable.Empty<GitHubBranch>();
+                  }
+                }
+						</script></code></pre>
+          </section>
+          <section>
+            <h2>Typed Clients</h2>
+            <ul>
+              <li>
+                Provide same capabilities as named clients
+                <ul>
+                  <li>
+                    without the need of <mark>"magic strings"</mark> as keys
+                  </li>
+                </ul>
+              </li>
+              <li class="fragment">
+                Provides <b>IntelliSense </b> and
+                <b> compiler help </b>
+              </li>
+              <li class="fragment">
+                <mark>Encapsulates</mark> the logic for interacting with the
+                remote API
+                <ul>
+                  <li>single location for configuration and usage</li>
+                </ul>
+              </li>
+              <li class="fragment">
+                A typed client accepts an HttpClient parameter in its
+                constructor
+              </li>
+            </ul>
+          </section>
+          <section>
+            <h2>Typed Client - Example</h2>
+            <pre><code class="cs" data-line-numbers="|3-4,6|7|9-13|16-19|" data-trim data-noescape><script type="text/template">
+              public class GitHubService
+              {
+                  private readonly HttpClient _httpClient;
+                  public GitHubService(HttpClient httpClient)
+                  {
+                      _httpClient = httpClient;
+                      _httpClient.BaseAddress = new Uri("https://api.github.com/");
+
+                      // The GitHub API requires two headers.
+                      _httpClient.DefaultRequestHeaders.Add(
+                          HeaderNames.Accept, "application/vnd.github.v3+json");
+                      _httpClient.DefaultRequestHeaders.Add(
+                          HeaderNames.UserAgent, "HttpRequestsSample");
+                  }
+
+                  public async Task<IEnumerable<GitHubBranch>?> GetAspNetCoreDocsBranchesAsync() =>
+                          await _httpClient.GetFromJsonAsync<IEnumerable<GitHubBranch>>(
+                              "repos/dotnet/AspNetCore.Docs/branches");
+                  }
+              }
+						</script>
+          </code>
+          </pre>
+          </section>
+          <section>
+            <h2>Register Typed Client</h2>
+            <ul>
+              <li>Register the typed client in <code>Program.cs</code></li>
+            </ul>
+            <pre>
+              <code class="cs" data-trim data-noescape>
+                <script type="text/template">
+                  builder.Services.AddHttpClient<GitHubService>();
+                </script>
+              </code>
+            </pre>
+          </section>
+          <section>
+            <h2>Use a typed client</h2>
+            <ul>
+              <li>
+                The typed client (service) can be injected and consumed directly
+                (DI).
+              </li>
+            </ul>
+            <pre>
+              <code class="cs" data-trim data-line-numbers="|5|14|" data-noescape>
+                <script type="text/template">
+                  public class TypedClientController : ControllerBase
+                  {
+                      private readonly GitHubService _gitHubService;
+
+                      public TypedClientController(GitHubService gitHubService)
+                      {
+                          _gitHubService = gitHubService; 
+                      }
+
+                      // GET: api/TypedClientController
+                      [HttpGet]
+                      public async Task<IEnumerable<GitHubBranch>?> Get()
+                      {
+                          return await _gitHubService.GetAspNetCoreDocsBranchesAsync();
                       }
                   }
                 </script>
               </code>
-          </section>
-          <section>
-            <h2><code>IJob</code> implementation</h2>
-            <pre><code class="cs" data-line-numbers="|5-6,23|16-22|" data-trim data-noescape><script type="text/template">
-							using Quartz.Data;
-
-							namespace Quartz.API;
-
-							public class WriteRandomNumberJob : IJob
-							{
-								private readonly ILogger<WriteRandomNumberJob> _logger;
-								private readonly RandomNumberDbContext _dbContext;
-
-								public WriteRandomNumberJob(ILogger<WriteRandomNumberJob> logger, RandomNumberDbContext dbContext) 
-								{
-									_dbContext = dbContext;
-									_logger = logger;
-								}
-
-								public async Task Execute(IJobExecutionContext context)
-								{
-									await _dbContext.AddAsync(new RandomNumber {
-										Number = new Random().Next()
-									});
-									await _dbContext.SaveChangesAsync();
-								}
-							}
-						</script></code></pre>
-            <small
-              >examples/lesson-14-background-services/Quartz/Quartz.API/WriteRandomNumberJob.cs</small
-            >
-          </section>
-          <section>
-            <h2>Clustering</h2>
-            <ul>
-              <li>
-                Must be considered when <mark>scaling</mark> the application
-                <mark>horizontally</mark>
-                <ul>
-                  <li>
-                    <mark>Challenge</mark> Each instance would create a
-                    background task
-                  </li>
-                </ul>
-              </li>
-              <li>
-                Possible solutions
-                <ul>
-                  <li>
-                    Move the task to a <mark>separate</mark> application (a
-                    <mark>headless</mark> worker service)
-                  </li>
-                  <li>
-                    Enable clustering to distribute tasks
-                    <mark>across</mark> instances
-                  </li>
-                </ul>
-              </li>
-            </ul>
-            <aside class="notes" aria-label="notes">
-              <h4>References</h4>
-              <ul>
-                <li>
-                  John Smith, ASP.NET Core in Action, 2nd edition (ISBN
-                  9781617298301), pp. 708-711
-                </li>
-              </ul>
-            </aside>
-          </section>
-          <section>
-            <h2>Quartz clustering</h2>
-            <pre><code class="cs" data-line-numbers="|4,9|5|6|7|8|" data-trim data-noescape><script type="text/template">
-							builder.Services.AddQuartz(
-								q => {
-									// ...
-									q.UsePersistentStore(s => {
-											s.UseSqlServer(connectionString);
-											s.UseClustering();
-											s.UseProperties = true;
-											s.UseJsonSerializer();
-								});
-							}
-						);
-						</script></code></pre>
-            <small
-              >examples/lesson-14-background-services/Quartz/Quartz.API/Program.cs</small
-            >
-          </section>
-          <section>
-            <h2>Clustering</h2>
-            <img
-              width="width: 60%;"
-              src="../../assets/quartz-clustering.png"
-              alt="quartz-clustering"
-            />
-            <aside class="notes" aria-label="notes">
-              <h4>References</h4>
-              <ul>
-                <li>
-                  John Smith, ASP.NET Core in Action, 2nd edition (ISBN
-                  9781617298301), p. 710
-                </li>
-              </ul>
-            </aside>
-          </section>
-          <section>
-            <h2>Persistent database</h2>
-            <ul>
-              <li>
-                Quartz.NET relies on a <mark>persistent</mark> database for
-                clustering
-                <ul>
-                  <li>
-                    Support a wide range of databases: MySQL, Oracle, SQL
-                    Server, etc.
-                  </li>
-                </ul>
-              </li>
-              <li>
-                Uses database as backing store
-                <ul>
-                  <li>Can also be used for only persistence</li>
-                  <li>
-                    If used for clustering, must support
-                    <mark>locking</mark> primitives
-                  </li>
-                </ul>
-              </li>
-              <li>
-                Does not create the tables automatically
-                <ul>
-                  <li>Add the required tables <mark>manually</mark></li>
-                  <li>
-                    Can be managed with Entity Framework Core
-                    <mark>migrations</mark>
-                  </li>
-                </ul>
-              </li>
-            </ul>
-            <aside class="notes" aria-label="notes">
-              <h4>References</h4>
-            </aside>
+            </pre>
           </section>
         </section>
         <section>
-          <h2>Wrap-up</h2>
+          <h2>References & Links</h2>
           <ul>
-            <li>
-              Background services
-              <ul>
-                <li>Use cases</li>
-                <li>Deployment</li>
-              </ul>
+            <li style="margin-bottom: 1rem;">
+              <b>IHttpClientFactory Consumption patterns</b>
+              <a
+                href="https://docs.microsoft.com/da-dk/aspnet/core/fundamentals/http-requests?view=aspnetcore-8.0#consumption-patterns"
+                >https://docs.microsoft.com/da-dk/aspnet/core/fundamentals/http-requests?view=aspnetcore-8.0#consumption-patterns</a
+              >
             </li>
-            <li>Implementing background tasks in .NET</li>
-            <li>Quartz.NET</li>
+            <li>Microservices architecture e-book (PDF) <a href="https://dotnet.microsoft.com/download/e-book/microservices-architecture/pdf">https://dotnet.microsoft.com/download/e-book/microservices-architecture/pdf</a> </li>
           </ul>
         </section>
       </div>
