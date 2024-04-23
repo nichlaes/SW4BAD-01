@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+
+    <title>Lesson 12</title>
+
+    <link rel="stylesheet" href="../../dist/reset.css" />
+    <link rel="stylesheet" href="../../dist/reveal.css" />
+    <link rel="stylesheet" href="../../dist/theme/white.css" />
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="../../css/asciinema-player.css"
+    />
+
+    <!-- Theme used for syntax highlighted code -->
+    <link rel="stylesheet" href="../../plugin/highlight/github.css" />
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides">
+        <section id="introduction">
+          <section>
+            <h1>Release and deployment</h1>
+            <h3>Week 12</h3>
+            <h4>SW4BAD-01</h4>
+          </section>
+          <section>
+            <h2>Agenda</h2>
+            <ul>
+              <li>Publishing and deploying applications</li>
+              <li>Preparing your Application</li>
+              <li>Docker</li>
+            </ul>
+          </section>
+        </section>
+        <section>
+          <section id="publishing-and-deploying">
+            <h2>Publishing and deploying applications</h2>
+          </section>
+          <section>
+            <h2>Overview</h2>
+            <ul>
+              <li>
+                <code>dotnet publish</code> builds a project for
+                <mark>deployment</mark>
+                <ul>
+                  <li>
+                    Produces assembly files, dependencies and the .NET runtime
+                    (optional)
+                  </li>
+                  <li>Output located in <code>bin/publish</code></li>
+                </ul>
+              </li>
+              <li class="fragment">
+                Possible to deploy directly to Azure with Visual Studio
+              </li>
+            </ul>
+          </section>
+          <section id="hosting-model">
+            <h2>ASP.NET Core hosting model</h2>
+            <ul>
+              <li>
+                An ASP.NET Core app is running in a <mark>web server</mark> in a
+                <mark>console</mark> application
+                <ul>
+                  <li>Typically a Krestel instance</li>
+                </ul>
+              </li>
+              <li class="fragment">
+                Krestel provides the HTTP functionality
+                <ul>
+                  <li>Receives requests and return responses</li>
+                  <li>
+                    Passes any request to the application itself to generate a
+                    response
+                  </li>
+                  <li>
+                    The request passes through the
+                    <mark>middleware</mark> pipeline
+                  </li>
+                </ul>
+              </li>
+            </ul>
+            <aside class="notes" aria-label="notes">
+              <h4>References</h4>
+              <ul>
+                <li>
+                  <a
+                    href="https://learn.microsoft.com/en-us/aspnet/core/fundamentals/servers/kestrel"
+                    >Kestrel web server implementation in ASP.NET Core |
+                    Microsoft Learn</a
+                  >
+                </li>
+              </ul>
+            </aside>
+          </section>
+          <section>
+            <h2>ASP.NET Core hosting model</h2>
+            <img
+              src="../../assets/hosting-model.png"
+              width="60%"
+              alt="hosting-model"
+            />
+            <small
+              >ASP.NET Core in Action, 2nd edition (ISBN 9781617298301), pp.
+              505</small
+            >
+            <aside class="notes" aria-label="notes">
+              <h4>References</h4>
+              <ul>
+                <li>
+                  ASP.NET Core in Action, 2nd edition (ISBN 9781617298301), pp.
+                  505
+                </li>
+              </ul>
+            </aside>
+          </section>
+          <section id="reverse-proxy">
+            <h2>Reverse proxies</h2>
+            <ul>
+              <li>
+                A reverse proxy is responsible for
+                <mark>receiving</mark> requests and <mark>forwarding</mark> them
+                to the appropiate <mark>destination</mark>
+              </li>
+              <li class="fragment">
+                Exposed <mark>directly</mark> to the internet
+                <ul>
+                  <li>Underlying services are exposed to the proxy</li>
+                </ul>
+              </li>
+              <li class="fragment">
+                Some <mark>benefits</mark> of using a reverse proxy
+                <ul>
+                  <li>Security</li>
+                  <li>Support for multiple applications</li>
+                  <li>Performance (caching)</li>
+                </ul>
+              </li>
+              <li class="fragment">
+                Some downsides of using a reverse proxy
+                <ul>
+                  <li>Increased <mark>complexity</mark></li>
+                </ul>
+              </li>
+            </ul>
+            <aside class="notes" aria-label="notes">
+              <h4>References</h4>
+              <ul>
+                <li>
+                  ASP.NET Core in Action, 2nd edition (ISBN 9781617298301), pp.
+                  505-506
+                </li>
+              </ul>
+            </aside>
+          </section>
+          <section>
+            <h2>Deployments</h2>
+            <ul>
+              <li>
+                <mark>Runtime/framework-dependent</mark>
+                <ul>
+                  <li>Small deployments</li>
+                  <li>Cross-platform</li>
+                  <li>Uses the latest patched runtime</li>
+                  <li>Requires .NET to be installed on the host</li>
+                  <li>.NET may change</li>
+                </ul>
+              </li>
+              <li class="fragment">
+                <mark>Self-contained</mark>
+                <ul>
+                  <li>Bundle .NET Framework and application together</li>
+                  <li>Platform-dependent</li>
+                  <li>Full control over .NET version</li>
+                  <li>Larger deployments</li>
+                  <li>Harder to update the .NET version</li>
+                </ul>
+              </li>
+            </ul>
+            <aside class="notes" aria-label="notes">
+              <h4>References</h4>
+              <ul>
+                <li>
+                  <a
+                    href="https://docs.microsoft.com/en-us/dotnet/core/deploying/"
+                    >Application publishing - .NET | Microsoft Docs</a
+                  >
+                </li>
+                <li>
+                  ASP.NET Core in Action, 2nd edition (ISBN 9781617298301), p.
+                  509
+                </li>
+              </ul>
+            </aside>
+          </section>
+          <section>
+            <h2>Deploying on Windows/Linux</h2>
+            <ul>
+              <li>
+                Internet Information Services (IIS)
+                <ul>
+                  <li>Application pools</li>
+                  <li>
+                    <mark>In-process</mark> and
+                    <mark>out-of-process</mark> hosting
+                  </li>
+                </ul>
+              </li>
+              <li class="fragment">
+                Nginx
+                <ul>
+                  <li>
+                    Add <code>ForwardedHeadersMiddleware</code>–remember to
+                    enable it by setting
+                    <code>ASPNETCORE_FORWARDEDHEADERS_ENABLED</code> to
+                    <code>true</code>
+                  </li>
+                  <li>
+                    Use the correct <mark>syntax</mark> for environment
+                    variables
+                  </li>
+                </ul>
+              </li>
+              <li class="fragment">
+                Apache
+                <ul>
+                  <li>Same as Nginx</li>
+                </ul>
+              </li>
+            </ul>
+            <div style="font-size: medium;">
+              ref:
+              <a
+                href="https://learn.microsoft.com/en-us/aspnet/core/host-and-deploy/proxy-load-balancer?view=aspnetcore-8.0"
+                >https://learn.microsoft.com/en-us/aspnet/core/host-and-deploy/proxy-load-balancer?view=aspnetcore-8.0</a
+              >
+            </div>
+            <aside class="notes" aria-label="notes">
+              <h4>References</h4>
+              <ul>
+                <li>
+                  <a
+                    href="https://docs.microsoft.com/en-us/aspnet/core/host-and-deploy/linux-nginx"
+                    >Host ASP.NET Core on Linux with Nginx | Microsoft Docs</a
+                  >
+                </li>
+                <li>
+                  <a
+                    href="https://docs.microsoft.com/en-us/aspnet/core/host-and-deploy/linux-apache"
+                    >Host ASP.NET Core on Linux with Apache | Microsoft Docs</a
+                  >
+                </li>
+                <li>
+                  <a
+                    href="https://docs.microsoft.com/en-us/aspnet/core/host-and-deploy/proxy-load-balancer"
+                    >Configure ASP.NET Core to work with proxy servers and load
+                    balancers | Microsoft Docs</a
+                  >
+                </li>
+              </ul>
+            </aside>
+          </section>
+        </section>
+
+        <section>
+          <section>
+            <h2>Preparing your application</h2>
+          </section>
+          <section>
+            <h2>Overview</h2>
+            <ul>
+              <li>
+                It's important to take <mark> security</mark> into account
+                <b>before</b> releasing
+              </li>
+              <li>appsettings.json</li>
+              <li>program.cs</li>
+            </ul>
+          </section>
+        </section>
+
+        <section>
+          <section>
+            <h2>Docker</h2>
+          </section>
+          <section>
+            <h2>Overview</h2>
+            <ul>
+              <li>Multistage</li>
+              <li>program.cs</li>
+            </ul>
+          </section>
+        </section>
+        <section id="wrap-up">
+          <h2>wrap-up</h2>
+          <ul>
+            <li>
+              Publishing and deploying applications
+              <ul>
+                <li>The .NET hosting model</li>
+                <li>Optimizing client-side assets</li>
+              </ul>
+            </li>
+          </ul>
+        </section>
+      </div>
+    </div>
+
+    <script src="../../dist/reveal.js"></script>
+    <script src="../../plugin/notes/notes.js"></script>
+    <script src="../../plugin/markdown/markdown.js"></script>
+    <script src="../../plugin/highlight/highlight.js"></script>
+    <script src="../../js/asciinema-player.js"></script>
+
+    <script>
+      // More info about initialization & config:
+      // - https://revealjs.com/initialization/
+      // - https://revealjs.com/config/
+      Reveal.initialize({
+        hash: true,
+        slideNumber: true,
+        pdfSeparateFragments: false,
+        // Learn about plugins: https://revealjs.com/plugins/
+        plugins: [RevealMarkdown, RevealHighlight, RevealNotes],
+      });
+    </script>
+  </body>
+</html>
